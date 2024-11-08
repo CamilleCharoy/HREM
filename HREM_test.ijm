@@ -84,16 +84,13 @@ function processFile(input, output, file, i) {
 	run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 	saveAs("Tiff", output+File.separator+file);	
 	// Create 20% downscalled image for images with names finishing by 0 or 5 only
-	if (endsWith(i, "0")) {
+	a = endsWith(i, "0");
+	b = endsWith(i, "5");
+	if (a==true || b==true) {
 		run("Scale...", "x=0.2 y=0.2 interpolation=Bilinear average create");
 		saveAs("Tiff", output20+File.separator+file);
 		close();
 		} 
-	if (endsWith(i, "5")) {
-		run("Scale...", "x=0.2 y=0.2 interpolation=Bilinear average create");
-		saveAs("Tiff", output20+File.separator+file);
-		close();
-		} 		
 	// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
 	selectImage(active);
 	run("Duplicate...", "gaussian");
@@ -102,16 +99,11 @@ function processFile(input, output, file, i) {
 	imageCalculator("Divide create 32-bit", active, blur);
 	saveAs("Tiff", FFoutput+File.separator+file);
 	close("\\Others");
-	if (endsWith(i, "0")) {
+	if (a==true || b==true){
 		run("Scale...", "x=0.2 y=0.2 interpolation=Bilinear average create");
 		saveAs("Tiff", FFoutput20+File.separator+file);
 		close();
 		} 
-	if (endsWith(i, "5")) {
-		run("Scale...", "x=0.2 y=0.2 interpolation=Bilinear average create");
-		saveAs("Tiff", FFoutput20+File.separator+file);
-		close();
-		}
 }
 close("ROI Manager");
 close("*");
