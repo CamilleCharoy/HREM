@@ -8,12 +8,16 @@ SID  = parts[0];
 
 images = input + File.separator + "Channel 1";
 
+xloc = screenWidth - screenWidth;
+yloc = screenHeight - screenHeight;
+
 //Open 20% res stack to select area to crop and save area for later processing of whole stack
 File.openSequence(images, " step=5");
 rename("Z DOWNSAMPLED 5X.tif");
 setTool("rectangle");
 
 Dialog.createNonBlocking("ROI Selection");
+Dialog.setLocation(xloc,yloc);
 Dialog.addMessage("Select the ROI that include all your sample \nOnce done click OK");
 Dialog.show();
 
@@ -36,6 +40,7 @@ close("Results")
 makeLine(0, 0, 0, 0);
 
 Dialog.createNonBlocking("Pixel Size");
+Dialog.setLocation(xloc,yloc);
 Dialog.addMessage("Draw a line along the graticule scale");
 Dialog.addNumber("lenght in mm on the graticule", 1);
 Dialog.addMessage("(graticule full lenght is 10mm)");
@@ -72,6 +77,7 @@ function processFolder(images) {
 	}
 }
 function processFile(input, output, file, i) {
+	showProgress(i, list.length);
 	open(images+File.separator+file);
 	active = getImageID();
 	run("Invert LUT");
