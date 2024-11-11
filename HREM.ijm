@@ -8,8 +8,6 @@ SID  = parts[0];
 
 images = input + File.separator + "Channel 1";
 
-pattern = ".*[0]|[5]";
-
 //Open 20% res stack to select area to crop and save area for later processing of whole stack
 File.openSequence(images, " step=5");
 rename("Z DOWNSAMPLED 5X.tif");
@@ -63,7 +61,7 @@ File.makeDirectory(FFoutput20);
 File.makeDirectory(output20);
 
 // Run Croping, Flat Field correction and scalling on all stack images
-//setBatchMode("hide");
+setBatchMode("hide");
 processFolder(images);
 function processFolder(images) {
 	list = getFileList(images);
@@ -108,12 +106,12 @@ function processFile(input, output, file, i) {
 close("ROI Manager");
 close("*");
 // Create Z downsampled stacks for data quick browsing
-File.openSequence(output, " step=5 scale=20.0");
+File.openSequence(output20);
 setVoxelSize(size*5, size*5, depth*5, "um");
 saveAs("Tiff", input+File.separator+ SID +"_cropped_scaled_20");
 close();
 
-File.openSequence(FFoutput, " step=5 scale=20.0");
+File.openSequence(FFoutput20);
 setVoxelSize(size*5, size*5, depth*5, "um");
 saveAs("Tiff", input+File.separator+ SID +"_cropped_FF_scaled_20");
 close();
