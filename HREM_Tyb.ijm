@@ -1,130 +1,219 @@
-#@ File (label = "Select SID folder", style = "directory") input
-#@ float (label = "cut thickness (in um)", style="format:#.##") depth
+// Pipeline for Tybulewicz lab
+// x  no need for downsample images and stacks 
+// x  select image folder and graticule directly
+// x  add for possibility of 2 imaging areas
+//   adapt so background as close to 0 as possible
+// x  invert image not LUT
+
+
+#@ File (label = "Select image folder", style = "directory") input
+#@ File (label = "Select graticule", style = "file") graticule
+#@ Integer (label = "Number of samples in block", min=0, max=2, value=2) Nsamples
+#@ Float (label = "cut thickness (in um)", style="format:#.##") depth
 suffix = ".tif"
 
-name = File.getNameWithoutExtension(input);
+parent = File.getParent(input);
+name = File.getNameWithoutExtension(parent);
 parts = split(name, "_");
 SID  = parts[0];
 
-images = input + File.separator + "Channel 1";
-
-xloc = screenWidth - screenWidth;
-yloc = screenHeight - screenHeight;
-
-//Open 20% res stack to select area to crop and save area for later processing of whole stack
-File.openSequence(images, " step=5");
-rename("Z DOWNSAMPLED 5X.tif");
-setTool("rectangle");
-
-Dialog.createNonBlocking("ROI Selection");
-Dialog.setLocation(xloc,yloc);
-Dialog.addMessage("Select the ROI that include all your sample \nOnce done click OK");
-Dialog.show();
-
-roiManager("Add");
-roiManager("Save", input+File.separator+ SID +"CropArea.roi");
-close();
+xloc = 100;
+yloc = 100;
 
 // Get pixel size from graticule
-open(input + File.separator + "Graticule.tif");
-Stack.setXUnit("pixel");
-run("Properties...", "channels=1 slices=1 frames=1 pixel_width=1 pixel_height=1 voxel_depth=1.0000000");
-setTool("line");
-
-run("Set Measurements...", "area bounding redirect=None decimal=3");
-roiManager("select", 0);
-roiManager("measure");
-area = getResult("Width");
-gaussian = area/20
-close("Results")
-makeLine(0, 0, 0, 0);
-
-Dialog.createNonBlocking("Pixel Size");
-Dialog.setLocation(xloc,yloc);
-Dialog.addMessage("Draw a line along the graticule scale");
-Dialog.addNumber("lenght in mm on the graticule", 1);
-Dialog.addMessage("(graticule full lenght is 10mm)");
-Dialog.show();
-
-graticule = Dialog.getNumber();
-run("Measure");
-length = getResult("Length");
-size = graticule * 1000 / length
-run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth=1");
-Stack.setXUnit("um");
-close("Results")
-close();
-
-// Create folders to save data
-FFoutput = input + File.separator + SID + "_cropped_FF"
-output = input + File.separator + SID + "_cropped"
-FFoutput20 = input + File.separator + SID + "_cropped_FF_scaled_20"
-output20 = input + File.separator + SID + "_cropped_scaled_20"
-File.makeDirectory(FFoutput);
-File.makeDirectory(output);
-File.makeDirectory(FFoutput20);
-File.makeDirectory(output20);
-
-// Run Croping, Flat Field correction and scalling on all stack images
-setBatchMode("hide");
-processFolder(images);
-function processFolder(images) {
-	list = getFileList(images);
-	list = Array.sort(list);
-	for (i = 0; i < list.length; i++) {
-		if(endsWith(list[i], suffix))
-			processFile(input, output, list[i], i);
-	}
-}
-function processFile(input, output, file, i) {
-	showProgress(i, list.length);
-	open(images+File.separator+file);
-	active = getImageID();
-	run("Invert LUT");
-	roiManager("Select", 0);
-	run("Crop");
-	// Add pixel size to image
+	open(graticule);
+	Stack.setXUnit("pixel");
+	run("Properties...", "channels=1 slices=1 frames=1 pixel_width=1 pixel_height=1 voxel_depth=1");
+	setTool("line");
+	
+	Dialog.createNonBlocking("Pixel Size");
+	Dialog.setLocation(xloc,yloc);
+	Dialog.addMessage("Draw a line along the graticule scale");
+	Dialog.addNumber("lenght in mm on the graticule", 1);
+	Dialog.addMessage("(graticule full lenght is 10mm)");
+	Dialog.show();
+	
+	grat = Dialog.getNumber();
+	run("Set Measurements...", "area mean bounding redirect=None decimal=3");
+	run("Measure");
+	length = getResult("Length");
+	size = grat * 1000 / length
+	run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth=1");
 	Stack.setXUnit("um");
-	run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
-	saveAs("Tiff", output+File.separator+file);	
-	// Create 20% downscalled image for images with names finishing by 0 or 5 only
-	a = endsWith(i, "0");
-	b = endsWith(i, "5");
-	if (a==true || b==true) {
-		run("Scale...", "x=0.2 y=0.2 interpolation=Bilinear average create");
-		saveAs("Tiff", output20+File.separator+file);
-		close();
-		} 
-	// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
-	selectImage(active);
-	run("Duplicate...", "gaussian");
-	blur = getImageID();
-	run("Gaussian Blur...", "sigma="+gaussian+"");
-	imageCalculator("Divide create 32-bit", active, blur);
-	saveAs("Tiff", FFoutput+File.separator+file);
-	close("\\Others");
-	if (a==true || b==true){
-		run("Scale...", "x=0.2 y=0.2 interpolation=Bilinear average create");
-		saveAs("Tiff", FFoutput20+File.separator+file);
-		close();
-		} 
-}
-close("ROI Manager");
-close("*");
-// Create Z downsampled stacks for data quick browsing
-File.openSequence(output20);
-setVoxelSize(size*5, size*5, depth*5, "um");
-saveAs("Tiff", input+File.separator+ SID +"_cropped_scaled_20");
-close();
+	close("Results")
+	close();
 
-File.openSequence(FFoutput20);
-setVoxelSize(size*5, size*5, depth*5, "um");
-saveAs("Tiff", input+File.separator+ SID +"_cropped_FF_scaled_20");
-close();
+//Open 20% res stack
+	File.openSequence(input, " step=5");
+	rename("Z DOWNSAMPLED 5X.tif");
+	Stack.setXUnit("pixel");
+	Stack.getDimensions(width, height, channels, slices, frames);
+	run("Properties...", "channels=1 slices="+slices+" frames=1 pixel_width=1 pixel_height=1 voxel_depth=1");
+	setTool("rectangle");
 
-File.openSequence(images, " step=5 scale=10.0");
+	if (Nsamples == 1) {
+	// select area to crop and save for later processing of whole stack
+		Dialog.createNonBlocking("ROI Selection");
+		Dialog.setLocation(xloc,yloc);
+		Dialog.addMessage("Select the ROI that include all your sample \nOnce done click OK");
+		Dialog.show();
+		
+		roiManager("Add");
+		roiManager("Save", parent + File.separator + SID +"_CropArea.roi");
+		roiManager("measure");
+		area = getResult("Width");
+		gaussian = area/20;
+		close("Results");
+		close();
+
+	// Create folders to save data
+		FFoutput = parent + File.separator + SID + "_cropped_FF";
+		output = parent + File.separator + SID + "_cropped";
+		File.makeDirectory(FFoutput);
+		File.makeDirectory(output);
+	
+	// Run Croping, Flat Field correction and scalling on all stack images
+		setBatchMode("hide");
+		processFolder(input);
+		function processFolder(input) {
+			list = getFileList(input);
+			list = Array.sort(list);
+			for (i = 0; i < list.length; i++) {
+				if(endsWith(list[i], suffix))
+					processFile(input, output, list[i], i);
+			}
+		}
+		function processFile(input, output, file, i) {
+			showProgress(i, list.length);
+			open(input+File.separator+file);
+			active = getImageID();
+			run("Invert");
+			roiManager("Select", 0);
+			run("Crop");
+			// Add pixel size to image
+			Stack.setXUnit("um");
+			run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
+			saveAs("Tiff", output+File.separator+file);	
+			// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
+			selectImage(active);
+			run("Duplicate...", "gaussian");
+			blur = getImageID();
+			run("Measure");
+			mean = getResult("Mean");
+			run("Subtract...", "value="+mean+"");
+			run("Gaussian Blur...", "sigma="+gaussian+"");
+			imageCalculator("Subtract create 32-bit", active, blur);
+			saveAs("Tiff", FFoutput+File.separator+file);
+			close("\\Others");
+			close ("Results");
+		}
+		close("ROI Manager");
+		close("*");
+	}
+
+	if (Nsamples == 2) {
+	// select Left and Right areas to crop and save for later processing of whole stack
+		// Left sample
+		Dialog.createNonBlocking("Left ROI Selection");
+		Dialog.setLocation(xloc,yloc);
+		Dialog.addMessage("Select the ROI that include all the sample on the Left \nOnce done click OK");
+		Dialog.show();	
+		roiManager("Add");
+		roiManager("Save", parent + File.separator + SID +"_Left_CropArea.roi");
+		roiManager("measure");
+		Larea = getResult("Width");
+		Lgaussian = Larea/20;
+		close("Results");
+		
+		// Right sample
+		Dialog.createNonBlocking("Right ROI Selection");
+		Dialog.setLocation(screenWidth-100,yloc);
+		Dialog.addMessage("Select the ROI that include all the sample on the Right \nOnce done click OK");
+		Dialog.show();
+		roiManager("Add");
+		roiManager("Save", parent + File.separator + SID +"_Right_CropArea.roi");
+		roiManager("measure");
+		Rarea = getResult("Width");
+		Rgaussian = Rarea/20;
+		close("Results");
+		close();
+
+	// Create folders to save data
+		// Left sample
+		Left = parent + File.separator + SID + "_Left";
+		File.makeDirectory(Left);
+		LFFoutput = Left + File.separator + SID + "_Left_cropped_FF";
+		Loutput = Left + File.separator + SID + "_Left_cropped";
+		File.makeDirectory(LFFoutput);
+		File.makeDirectory(Loutput);
+		// Right sample		
+		Right = parent + File.separator + SID + "_Right";
+		File.makeDirectory(Right);
+		RFFoutput = Right + File.separator + SID + "_Right_cropped_FF";
+		Routput = Right + File.separator + SID + "_Right_cropped";
+		File.makeDirectory(RFFoutput);
+		File.makeDirectory(Routput);
+	
+	// Run Croping, Flat Field correction and scalling on all stack images
+		setBatchMode("hide");
+		processFolder(input);
+		function processFolder(input) {
+			list = getFileList(input);
+			list = Array.sort(list);
+			for (i = 0; i < list.length; i++) {
+				if(endsWith(list[i], suffix))
+					processFile(input, Loutput, list[i], i);
+			}
+		}
+		function processFile(input, output, file, i) {
+			showProgress(i, list.length);
+			open(input+File.separator+file);
+			active = getImageID();
+			run("Invert");
+			// add pixel size
+			Stack.setXUnit("um");
+			run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
+
+			// Left sample
+				roiManager("Select", 0);
+				run("Duplicate...", " ");
+				LeftID = getImageID();
+				saveAs("Tiff", Loutput+File.separator+file);
+				// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
+				run("Duplicate...", "gaussian");
+				Lblur = getImageID();
+				run("Measure");
+				mean = getResult("Mean", 0);
+				run("Subtract...", "value="+mean+"");
+				run("Gaussian Blur...", "sigma="+Lgaussian+"");
+				imageCalculator("Subtract create 32-bit", LeftID, Lblur);
+				saveAs("Tiff", LFFoutput+File.separator+file);
+				close();
+			// Right sample
+				selectImage(active);
+				roiManager("Select", 1);
+				run("Crop");
+				saveAs("Tiff", Routput+File.separator+file);
+				// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
+				run("Duplicate...", "gaussian");
+				Rblur = getImageID();
+				run("Measure");
+				mean = getResult("Mean", 1);
+				run("Subtract...", "value="+mean+"");
+				run("Gaussian Blur...", "sigma="+Rgaussian+"");
+				imageCalculator("Subtract create 32-bit", active, Rblur);
+				saveAs("Tiff", RFFoutput+File.separator+file);
+				close("*");	
+				close("Results");
+		}
+		close("ROI Manager");
+		close("*");		
+	}
+
+// Create Z downsampled stacks for quick data browsing
+File.openSequence(input, " step=5 scale=10.0");
 setVoxelSize(size*10, size*10, depth*5, "um");
-saveAs("Tiff", input+File.separator+ SID +"_scaled_10");
+saveAs("Tiff", parent + File.separator + SID +"_scaled_10");
 close();
 
 showMessage("Sample " + SID + " processed");
