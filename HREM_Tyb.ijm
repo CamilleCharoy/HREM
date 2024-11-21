@@ -1,10 +1,3 @@
-// Pipeline for Tybulewicz lab
-// x  no need for downsample images and stacks 
-// x  select image folder and graticule directly
-// x  add for possibility of 2 imaging areas
-//   adapt so background as close to 0 as possible
-// x  invert image not LUT
-
 
 #@ File (label = "Select image folder", style = "directory") input
 #@ File (label = "Select graticule", style = "file") graticule
@@ -17,17 +10,15 @@ name = File.getNameWithoutExtension(parent);
 parts = split(name, "_");
 SID  = parts[0];
 
-xloc = 100;
-yloc = 100;
-
 // Get pixel size from graticule
 	open(graticule);
 	Stack.setXUnit("pixel");
-	run("Properties...", "channels=1 slices=1 frames=1 pixel_width=1 pixel_height=1 voxel_depth=1");
+	Stack.getDimensions(width, height, channels, slices, frames);
+	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width=1 pixel_height=1 voxel_depth=1");
 	setTool("line");
 	
 	Dialog.createNonBlocking("Pixel Size");
-	Dialog.setLocation(xloc,yloc);
+	Dialog.setLocation(100,100);
 	Dialog.addMessage("Draw a line along the graticule scale");
 	Dialog.addNumber("lenght in mm on the graticule", 1);
 	Dialog.addMessage("(graticule full lenght is 10mm)");
@@ -38,7 +29,8 @@ yloc = 100;
 	run("Measure");
 	length = getResult("Length");
 	size = grat * 1000 / length
-	run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth=1");
+	Stack.getDimensions(width, height, channels, slices, frames);
+	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 	Stack.setXUnit("um");
 	close("Results")
 	close();
@@ -48,13 +40,13 @@ yloc = 100;
 	rename("Z DOWNSAMPLED 5X.tif");
 	Stack.setXUnit("pixel");
 	Stack.getDimensions(width, height, channels, slices, frames);
-	run("Properties...", "channels=1 slices="+slices+" frames=1 pixel_width=1 pixel_height=1 voxel_depth=1");
+	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width=1 pixel_height=1 voxel_depth=1");
 	setTool("rectangle");
 
 	if (Nsamples == 1) {
 	// select area to crop and save for later processing of whole stack
 		Dialog.createNonBlocking("ROI Selection");
-		Dialog.setLocation(xloc,yloc);
+		Dialog.setLocation(screenWidth/2,100);
 		Dialog.addMessage("Select the ROI that include all your sample \nOnce done click OK");
 		Dialog.show();
 		
@@ -80,10 +72,10 @@ yloc = 100;
 			list = Array.sort(list);
 			for (i = 0; i < list.length; i++) {
 				if(endsWith(list[i], suffix))
-					processFile(input, output, list[i], i);
+					processFile(input, parent, list[i], i);
 			}
 		}
-		function processFile(input, output, file, i) {
+		function processFile(input, parent, file, i) {
 			showProgress(i, list.length);
 			open(input+File.separator+file);
 			active = getImageID();
@@ -92,7 +84,7 @@ yloc = 100;
 			run("Crop");
 			// Add pixel size to image
 			Stack.setXUnit("um");
-			run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
+			run("Properties...", "channels="+channels+" slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 			saveAs("Tiff", output+File.separator+file);	
 			// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
 			selectImage(active);
@@ -105,17 +97,16 @@ yloc = 100;
 			imageCalculator("Subtract create 32-bit", active, blur);
 			saveAs("Tiff", FFoutput+File.separator+file);
 			close("\\Others");
-			close ("Results");
+			run("Clear Results");
 		}
 		close("ROI Manager");
 		close("*");
 	}
-
-	if (Nsamples == 2) {
+	else (Nsamples == 2) {
 	// select Left and Right areas to crop and save for later processing of whole stack
 		// Left sample
 		Dialog.createNonBlocking("Left ROI Selection");
-		Dialog.setLocation(xloc,yloc);
+		Dialog.setLocation(100,100);
 		Dialog.addMessage("Select the ROI that include all the sample on the Left \nOnce done click OK");
 		Dialog.show();	
 		roiManager("Add");
@@ -127,7 +118,7 @@ yloc = 100;
 		
 		// Right sample
 		Dialog.createNonBlocking("Right ROI Selection");
-		Dialog.setLocation(screenWidth-100,yloc);
+		Dialog.setLocation(screenWidth-100,100);
 		Dialog.addMessage("Select the ROI that include all the sample on the Right \nOnce done click OK");
 		Dialog.show();
 		roiManager("Add");
@@ -162,17 +153,17 @@ yloc = 100;
 			list = Array.sort(list);
 			for (i = 0; i < list.length; i++) {
 				if(endsWith(list[i], suffix))
-					processFile(input, Loutput, list[i], i);
+					processFile(input, parent, list[i], i);
 			}
 		}
-		function processFile(input, output, file, i) {
+		function processFile(input, parent, file, i) {
 			showProgress(i, list.length);
 			open(input+File.separator+file);
 			active = getImageID();
 			run("Invert");
 			// add pixel size
 			Stack.setXUnit("um");
-			run("Properties...", "channels=1 slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
+			run("Properties...", "channels="+channels+" slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 
 			// Left sample
 				roiManager("Select", 0);
@@ -204,9 +195,9 @@ yloc = 100;
 				imageCalculator("Subtract create 32-bit", active, Rblur);
 				saveAs("Tiff", RFFoutput+File.separator+file);
 				close("*");	
-				close("Results");
+				run("Clear Results");
 		}
-		close("ROI Manager");
+		run("Close");
 		close("*");		
 	}
 
