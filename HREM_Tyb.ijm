@@ -47,7 +47,7 @@ SID  = parts[0];
 	// select area to crop and save for later processing of whole stack
 		Dialog.createNonBlocking("ROI Selection - 1 sample");
 		Dialog.setLocation(100,0);
-		Dialog.addMessage("Select the ROI that include all your sample \nOnce done click OK");
+		Dialog.addMessage("Select the ROI to include the whole sample \nOnce done click OK");
 		Dialog.show();
 		
 		roiManager("Add");
@@ -69,13 +69,14 @@ SID  = parts[0];
 		processFolder_1samp(input);
 	} 
 	
-	else (Nsamples == 2) {
+	if (Nsamples == 2) {
 	// select Left and Right areas to crop and save for later processing of whole stack
 		// Left sample
 		Dialog.createNonBlocking("ROI Selection - 2 samples - Left");
 		Dialog.setLocation(100,0);
-		Dialog.addMessage("Select the ROI that include all the sample on the Left \nOnce done click OK");
-		Dialog.show();	
+		Dialog.addMessage("Select the ROI to include the whole sample on the Left \nOnce done click OK");
+		Dialog.show();
+		
 		roiManager("Add");
 		roiManager("Save", parent + File.separator + SID +"_Left_CropArea.roi");
 		roiManager("measure");
@@ -86,7 +87,7 @@ SID  = parts[0];
 		// Right sample
 		Dialog.createNonBlocking("ROI Selection  - 2 samples - Right");
 		Dialog.setLocation(screenWidth-100,0);
-		Dialog.addMessage("Select the ROI that include all the sample on the Right \nOnce done click OK");
+		Dialog.addMessage("Select the ROI to include the whole sample on the Right \nOnce done click OK");
 		Dialog.show();
 		roiManager("Add");
 		roiManager("Save", parent + File.separator + SID +"_Right_CropArea.roi");
