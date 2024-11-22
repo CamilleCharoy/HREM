@@ -86,7 +86,7 @@ SID  = parts[0];
 		
 		// Right sample
 		Dialog.createNonBlocking("ROI Selection  - 2 samples - Right");
-		Dialog.setLocation(screenWidth-100,0);
+		Dialog.setLocation(200,0);
 		Dialog.addMessage("Select the ROI to include the whole sample on the Right \nOnce done click OK");
 		Dialog.show();
 		roiManager("Add");
@@ -141,7 +141,6 @@ function processFolder_1samp(input) {
 	}
 }
 function processFile_1samp(input, parent, file, i) {
-	print("I'm in Nsamples 1 function, my name is Camille!");
 	showProgress(i, list.length);
 	open(input+File.separator+file);
 	active = getImageID();
@@ -176,7 +175,6 @@ function processFolder_2samp(input) {
 	}
 }
 function processFile_2samp(input, parent, file, i) {
-	print("I'm in Nsamples 2 function! Help! How did i get here!!???");
 	showProgress(i, list.length);
 	open(input+File.separator+file);
 	active = getImageID();
@@ -198,7 +196,7 @@ function processFile_2samp(input, parent, file, i) {
 		run("Gaussian Blur...", "sigma="+Lgaussian+"");
 		imageCalculator("Subtract create 32-bit", LeftID, Lblur);
 		saveAs("Tiff", LFFoutput+File.separator+file);
-		close()
+		close();
 		close(LeftID);
 		close(Lblur);
 	// Right sample
