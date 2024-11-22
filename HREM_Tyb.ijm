@@ -29,14 +29,15 @@ SID  = parts[0];
 	run("Measure");
 	length = getResult("Length");
 	size = grat * 1000 / length
-	Stack.getDimensions(width, height, channels, slices, frames);
 	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 	Stack.setXUnit("um");
 	close("Results")
 	close();
 
 //Open 20% res stack
-	File.openSequence(input, " step=5");
+if (channels == 4) {
+	keepChannel2(input);
+} else {File.openSequence(input, " step=5");}
 	rename("Z DOWNSAMPLED 5X.tif");
 	Stack.setXUnit("pixel");
 	Stack.getDimensions(width, height, channels, slices, frames);
@@ -149,6 +150,7 @@ function processFile_1samp(input, parent, file, i) {
 	run("Crop");
 	// Add pixel size to image
 	Stack.setXUnit("um");
+	Stack.getDimensions(width, height, channels, slices, frames);
 	run("Properties...", "channels="+channels+" slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 	saveAs("Tiff", output+File.separator+file);	
 	// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
@@ -181,6 +183,7 @@ function processFile_2samp(input, parent, file, i) {
 	run("Invert");
 	// add pixel size
 	Stack.setXUnit("um");
+	Stack.getDimensions(width, height, channels, slices, frames);
 	run("Properties...", "channels="+channels+" slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
 	// Left sample
 		roiManager("Select", 0);
@@ -216,3 +219,14 @@ function processFile_2samp(input, parent, file, i) {
 		close("*");	
 		run("Clear Results");
 }
+
+function keepChannel2(input) { 
+// Only keep 2nd channel (green) of each image
+	File.openSequence(input, " step=5");
+	Stack.getDimensions(width, height, channels, slices, frames);
+	run("Stack to Hyperstack...", "order=xyczt(default) channels=4 slices="+slices/4+" frames=1 display=Grayscale");
+	Stack.setChannel(2);
+	run("Reduce Dimensionality...", "slices");
+	resetMinAndMax();
+}
+
