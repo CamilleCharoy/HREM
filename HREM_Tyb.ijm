@@ -12,11 +12,11 @@ SID  = parts[0];
 
 // Get pixel size from graticule
 	open(graticule);
-	Stack.setXUnit("pixel");
 	Stack.getDimensions(width, height, channels, slices, frames);
-	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width=1 pixel_height=1 voxel_depth=1");
-	setTool("line");
+	chanelNumber = channels
+	RemovePixelSize();
 	
+	setTool("line");
 	Dialog.createNonBlocking("Pixel Size");
 	Dialog.setLocation(100,0);
 	Dialog.addMessage("Draw a line along the graticule scale");
@@ -29,19 +29,16 @@ SID  = parts[0];
 	run("Measure");
 	length = getResult("Length");
 	size = grat * 1000 / length
-	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
-	Stack.setXUnit("um");
 	close("Results")
 	close();
 
 //Open 20% res stack
-if (channels == 4) {
+if (chanelNumber == 4) {
+	File.openSequence(input, " step=5");
 	keepChannel2(input);
 } else {File.openSequence(input, " step=5");}
 	rename("Z DOWNSAMPLED 5X.tif");
-	Stack.setXUnit("pixel");
-	Stack.getDimensions(width, height, channels, slices, frames);
-	run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width=1 pixel_height=1 voxel_depth=1");
+	RemovePixelSize();
 	setTool("rectangle");
 
 	if (Nsamples == 1) {
@@ -143,28 +140,29 @@ function processFolder_1samp(input) {
 }
 function processFile_1samp(input, parent, file, i) {
 	showProgress(i, list.length);
-	open(input+File.separator+file);
-	active = getImageID();
-	run("Invert");
-	roiManager("Select", 0);
-	run("Crop");
-	// Add pixel size to image
-	Stack.setXUnit("um");
-	Stack.getDimensions(width, height, channels, slices, frames);
-	run("Properties...", "channels="+channels+" slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
+	if (chanelNumber == 4) {
+		open(input+File.separator+file);
+		start = getImageID();
+		run("Invert");
+		roiManager("Select", 0);
+		Stack.setChannel(2);
+		run("Duplicate...", "  channels=2");
+		active = getImageID();
+		selectImage(start);
+		close();
+	} else {
+		open(input+File.separator+file);
+		run("Invert");
+		roiManager("Select", 0);
+		active = getImageID();
+		run("Crop");
+		}
+	AddPixelSize (size, depth);
 	saveAs("Tiff", output+File.separator+file);	
-	// Pseudo Flat Field Correction (Gaussian of radius a twentieth the size of the image and dividing the original image by it) creating a 32bit image
 	selectImage(active);
-	run("Duplicate...", "gaussian");
-	blur = getImageID();
-	run("Measure");
-	mean = getResult("Mean");
-	run("Subtract...", "value="+mean+"");
-	run("Gaussian Blur...", "sigma="+gaussian+"");
-	imageCalculator("Subtract create 32-bit", active, blur);
-	saveAs("Tiff", FFoutput+File.separator+file);
-	close("\\Others");
-	run("Clear Results");
+	PseudoFlatField(active, gaussian, FFoutput);
+	selectImage(active);
+	close();
 }
 
 // for 2 samples:
@@ -178,51 +176,75 @@ function processFolder_2samp(input) {
 }
 function processFile_2samp(input, parent, file, i) {
 	showProgress(i, list.length);
-	open(input+File.separator+file);
-	active = getImageID();
-	run("Invert");
-	// add pixel size
-	Stack.setXUnit("um");
-	Stack.getDimensions(width, height, channels, slices, frames);
-	run("Properties...", "channels="+channels+" slices=1 frames=1 pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
-	// Left sample
+	if (chanelNumber == 4) {
+		open(input+File.separator+file);
+		start = getImageID();
+		run("Invert");
 		roiManager("Select", 0);
-		run("Duplicate...", " ");
+		Stack.setChannel(2);
+		run("Duplicate...", "  channels=2");
 		LeftID = getImageID();
-		saveAs("Tiff", Loutput+File.separator+file);
-		// Pseudo Flat Field Correction 
-		run("Duplicate...", "gaussian");
-		Lblur = getImageID();
-		run("Measure");
-		mean = getResult("Mean", 0);
-		run("Subtract...", "value="+mean+"");
-		run("Gaussian Blur...", "sigma="+Lgaussian+"");
-		imageCalculator("Subtract create 32-bit", LeftID, Lblur);
-		saveAs("Tiff", LFFoutput+File.separator+file);
-		close();
-		close(LeftID);
-		close(Lblur);
-	// Right sample
-		selectImage(active);
+		selectImage(start);
 		roiManager("Select", 1);
-		run("Crop");
-		saveAs("Tiff", Routput+File.separator+file);
-		// Pseudo Flat Field Correction 
-		run("Duplicate...", "gaussian");
-		Rblur = getImageID();
-		run("Measure");
-		mean = getResult("Mean", 1);
-		run("Subtract...", "value="+mean+"");
-		run("Gaussian Blur...", "sigma="+Rgaussian+"");
-		imageCalculator("Subtract create 32-bit", active, Rblur);
-		saveAs("Tiff", RFFoutput+File.separator+file);
-		close("*");	
-		run("Clear Results");
+		Stack.setChannel(2);
+		run("Duplicate...", "  channels=2");
+		RightID = getImageID();
+		selectImage(start);
+		close();
+	} else {
+		open(input+File.separator+file);
+		run("Invert");
+		start = getImageID();
+		roiManager("Select", 0);
+		run("Duplicate...");
+		LeftID = getImageID();
+		roiManager("Select", 1);
+		run("Crop");		
+		RightID = getImageID();
+	}
+	selectImage(LeftID);
+	AddPixelSize (size, depth);	
+	saveAs("Tiff", Loutput+File.separator+file);
+	PseudoFlatField(LeftID, Lgaussian, LFFoutput);
+	close();
+	selectImage(RightID);
+	saveAs("Tiff", Routput+File.separator+file);
+	PseudoFlatField(RightID, Rgaussian, RFFoutput);
+	close();
+}
+
+function AddPixelSize (size, depth){
+// add pixel size to image
+    Stack.setXUnit("um");
+    Stack.getDimensions(width, height, channels, slices, frames);
+    run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width="+size+" pixel_height="+size+" voxel_depth="+depth+"");
+}
+
+function RemovePixelSize() {
+// remove pixel size to image
+    Stack.setXUnit("pixel");
+    Stack.getDimensions(width, height, channels, slices, frames);
+    run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width=1 pixel_height=1 voxel_depth=1");
+}
+
+function PseudoFlatField(active, gaussian, output) {
+// Removes background and does a pseudo flat field correction
+    run("Duplicate...", "gaussian");
+    blur = getImageID();
+    run("Measure");
+    mean = getResult("Mean", 0);
+    run("Subtract...", "value="+mean+"");
+    run("Gaussian Blur...", "sigma="+gaussian+"");
+    imageCalculator("Subtract create 32-bit", active, blur);
+    saveAs("Tiff", output+File.separator+file);
+    close();
+    selectImage(blur);
+    close();
+    run("Clear Results");
 }
 
 function keepChannel2(input) { 
 // Only keep 2nd channel (green) of each image
-	File.openSequence(input, " step=5");
 	Stack.getDimensions(width, height, channels, slices, frames);
 	run("Stack to Hyperstack...", "order=xyczt(default) channels=4 slices="+slices/4+" frames=1 display=Grayscale");
 	Stack.setChannel(2);
