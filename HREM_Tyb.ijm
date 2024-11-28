@@ -1,7 +1,7 @@
 
 #@ File (label = "Select image folder", style = "directory") input
 #@ File (label = "Select graticule", style = "file") graticule
-#@ Integer (label = "Number of samples in block", min=1, max=2, value=2) Nsamples
+#@ Integer (label = "Number of samples in block", style = "slider", min=1, max=2) Nsamples
 #@ Float (label = "cut thickness (in um)", style="format:#.##") depth
 suffix = ".tif"
 
@@ -114,11 +114,11 @@ if (chanelNumber == 4) {
 	// Run Croping, Flat Field correction and scalling on all stack images
 		setBatchMode("hide");
 		processFolder_2samp(input);
-	} 
-		run("Close All");
-		close("Results");
-		close("ROI Manager");
-		close("Log");
+} 
+run("Close All");
+close("Results");
+close("ROI Manager");
+close("Log");
 
 // Create Z downsampled stacks for quick data browsing
 if (chanelNumber == 4) {
