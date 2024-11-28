@@ -121,10 +121,13 @@ if (chanelNumber == 4) {
 		close("Log");
 
 // Create Z downsampled stacks for quick data browsing
-File.openSequence(input, " step=5 scale=10.0");
-setVoxelSize(size*10, size*10, depth*5, "um");
-saveAs("Tiff", parent + File.separator + SID +"_scaled_10");
-close();
+if (chanelNumber == 4) {
+	File.openSequence(input, " step=5 scale=10.0");
+	keepChannel2(input);
+} else {File.openSequence(input, " step=5 scale=10.0");}
+	setVoxelSize(size*10, size*10, depth*5, "um");
+	saveAs("Tiff", parent + File.separator + SID +"_scaled_10");
+	close();
 
 showMessage("Sample " + SID + " processed");
 	
