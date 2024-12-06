@@ -13,30 +13,40 @@ SID  = parts[0];
 // Get pixel size from graticule
 	open(graticule);
 	Stack.getDimensions(width, height, channels, slices, frames);
-	chanelNumber = channels
+	chanelNumber = channels;
 	RemovePixelSize();
 	
 	setTool("line");
 	Dialog.createNonBlocking("Pixel Size");
 	Dialog.setLocation(100,0);
 	Dialog.addMessage("Draw a line along the graticule scale");
-	Dialog.addNumber("lenght in mm on the graticule", 1);
-	Dialog.addMessage("(graticule full lenght is 10mm)");
+	Dialog.addNumber("length in mm on the graticule", 1);
+	Dialog.addMessage("(graticule full length is 10mm)");
 	Dialog.show();
 	
 	grat = Dialog.getNumber();
 	run("Set Measurements...", "area mean bounding redirect=None decimal=3");
 	run("Measure");
 	length = getResult("Length");
-	size = grat * 1000 / length
-	close("Results")
+	size = grat * 1000 / length;
+	close("Results");
 	close();
 
 //Open 20% res stack
 if (chanelNumber == 4) {
 	File.openSequence(input, " step=5");
-	keepChannel2(input);
-} else {File.openSequence(input, " step=5");}
+	keepChannel2();
+	run("Scale...", "x=0.1 y=0.1 z=1.0 interpolation=Bilinear process create");
+	setVoxelSize(size*10, size*10, depth*5, "um");
+	saveAs("Tiff", parent + File.separator + SID +"_scaled_10");
+	close();
+} else {
+	File.openSequence(input, " step=5");
+	run("Scale...", "x=0.1 y=0.1 z=1.0 interpolation=Bilinear process create");
+	setVoxelSize(size*10, size*10, depth*5, "um");
+	saveAs("Tiff", parent + File.separator + SID +"_scaled_10");
+	close();
+}
 	rename("Z DOWNSAMPLED 5X.tif");
 	RemovePixelSize();
 	setTool("rectangle");
@@ -88,6 +98,7 @@ if (chanelNumber == 4) {
 		Dialog.addMessage("Select the ROI to include the whole sample on the Right \nOnce done click OK");
 		Dialog.show();
 		roiManager("Add");
+		roiManager("select", 1);
 		roiManager("Save", parent + File.separator + SID +"_Right_CropArea.roi");
 		roiManager("measure");
 		Rarea = getResult("Width");
@@ -120,18 +131,9 @@ close("Results");
 close("ROI Manager");
 close("Log");
 
-// Create Z downsampled stacks for quick data browsing
-if (chanelNumber == 4) {
-	File.openSequence(input, " step=5 scale=10.0");
-	keepChannel2(input);
-} else {File.openSequence(input, " step=5 scale=10.0");}
-	setVoxelSize(size*10, size*10, depth*5, "um");
-	saveAs("Tiff", parent + File.separator + SID +"_scaled_10");
-	close();
-
 showMessage("Sample " + SID + " processed");
 	
-// functions
+//...................................FUNCTIONS..............................................
 // 1 sample:
 function processFolder_1samp(input) {
 	list = getFileList(input);
@@ -177,6 +179,7 @@ function processFolder_2samp(input) {
 			processFile_2samp(input, parent, list[i], i);
 	}
 }
+
 function processFile_2samp(input, parent, file, i) {
 	showProgress(i, list.length);
 	if (chanelNumber == 4) {
@@ -246,7 +249,7 @@ function PseudoFlatField(active, gaussian, output) {
     run("Clear Results");
 }
 
-function keepChannel2(input) { 
+function keepChannel2() { 
 // Only keep 2nd channel (green) of each image
 	Stack.getDimensions(width, height, channels, slices, frames);
 	run("Stack to Hyperstack...", "order=xyczt(default) channels=4 slices="+slices/4+" frames=1 display=Grayscale");
