@@ -1,3 +1,13 @@
+////////////////////////////////////////////////////////////////////////////////////////
+// Macro to process images of HREM samples                                            //
+// Pipeline for Tybulewizc lab                                                        //
+// - get pixel size from graticule and apply to all images                            //
+// - crop sample (compatible with 1 or 2 samples per image)                           //
+// - apply pseudo flat field correction to increase contrast and image homogeneity    //
+// - create 10% resolution stack to quickly browse sample                             // 
+// written by Camille CHAROY, in CALM (last update 24/12/06)                          //
+////////////////////////////////////////////////////////////////////////////////////////
+
 
 #@ File (label = "Select image folder", style = "directory") input
 #@ File (label = "Select graticule", style = "file") graticule
