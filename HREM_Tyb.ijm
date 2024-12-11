@@ -175,7 +175,7 @@ function processFile_1samp(input, parent, file, i) {
 	AddPixelSize (size, depth);
 	saveAs("Tiff", output+File.separator+file);	
 	selectImage(active);
-	PseudoFlatField(active, gaussian, FFoutput);
+	PseudoFlatField(active, gaussian, FFoutput, "");
 	selectImage(active);
 	close();
 }
@@ -212,20 +212,22 @@ function processFile_2samp(input, parent, file, i) {
 		run("Invert");
 		start = getImageID();
 		roiManager("Select", 0);
-		run("Duplicate...");
+		run("Duplicate...", " ");
 		LeftID = getImageID();
+		selectImage(start);
 		roiManager("Select", 1);
 		run("Crop");		
 		RightID = getImageID();
 	}
 	selectImage(LeftID);
 	AddPixelSize (size, depth);	
-	saveAs("Tiff", Loutput+File.separator+file);
-	PseudoFlatField(LeftID, Lgaussian, LFFoutput);
+	filename = File.getNameWithoutExtension(file);
+	saveAs("Tiff", Loutput+File.separator+filename+"_Left");
+	PseudoFlatField(LeftID, Lgaussian, LFFoutput, "_Left");
 	close();
 	selectImage(RightID);
-	saveAs("Tiff", Routput+File.separator+file);
-	PseudoFlatField(RightID, Rgaussian, RFFoutput);
+	saveAs("Tiff", Routput+File.separator+filename+"_Right");
+	PseudoFlatField(RightID, Rgaussian, RFFoutput, "_Right");
 	close();
 }
 
@@ -243,8 +245,9 @@ function RemovePixelSize() {
     run("Properties...", "channels="+channels+" slices="+slices+" frames="+frames+" pixel_width=1 pixel_height=1 voxel_depth=1");
 }
 
-function PseudoFlatField(active, gaussian, output) {
+function PseudoFlatField(active, gaussian, output, side) {
 // Removes background and does a pseudo flat field correction
+    filename = File.getNameWithoutExtension(file);
     run("Duplicate...", "gaussian");
     blur = getImageID();
     run("Measure");
@@ -252,7 +255,7 @@ function PseudoFlatField(active, gaussian, output) {
     run("Subtract...", "value="+mean+"");
     run("Gaussian Blur...", "sigma="+gaussian+"");
     imageCalculator("Subtract create 32-bit", active, blur);
-    saveAs("Tiff", output+File.separator+file);
+    saveAs("Tiff", output+File.separator+filename+side);
     close();
     selectImage(blur);
     close();
