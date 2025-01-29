@@ -77,8 +77,8 @@ if (chanelNumber == 4) {
 		close();
 
 	// Create folders to save data
-		FFoutput = parent + File.separator + SID + "_cropped_FF";
-		output = parent + File.separator + SID + "_cropped";
+		FFoutput = parent + File.separator + SID + "_FF";
+		output = parent + File.separator + SID + "_";
 		File.makeDirectory(FFoutput);
 		File.makeDirectory(output);
 	
@@ -120,15 +120,15 @@ if (chanelNumber == 4) {
 		// Left sample
 		Left = parent + File.separator + SID + "_Left";
 		File.makeDirectory(Left);
-		LFFoutput = Left + File.separator + SID + "_Left_cropped_FF";
-		Loutput = Left + File.separator + SID + "_Left_cropped";
+		LFFoutput = Left + File.separator + SID + "_Left_FF";
+		Loutput = Left + File.separator + SID + "_Left_";
 		File.makeDirectory(LFFoutput);
 		File.makeDirectory(Loutput);
 		// Right sample		
 		Right = parent + File.separator + SID + "_Right";
 		File.makeDirectory(Right);
-		RFFoutput = Right + File.separator + SID + "_Right_cropped_FF";
-		Routput = Right + File.separator + SID + "_Right_cropped";
+		RFFoutput = Right + File.separator + SID + "_Right_FF";
+		Routput = Right + File.separator + SID + "_Right_";
 		File.makeDirectory(RFFoutput);
 		File.makeDirectory(Routput);
 	
@@ -159,6 +159,7 @@ function processFile_1samp(input, parent, file, i) {
 		open(input+File.separator+file);
 		start = getImageID();
 		run("Invert");
+		run("Grays");
 		roiManager("Select", 0);
 		Stack.setChannel(2);
 		run("Duplicate...", "  channels=2");
@@ -196,6 +197,7 @@ function processFile_2samp(input, parent, file, i) {
 		open(input+File.separator+file);
 		start = getImageID();
 		run("Invert");
+		run("Grays");
 		roiManager("Select", 0);
 		Stack.setChannel(2);
 		run("Duplicate...", "  channels=2");
@@ -222,12 +224,12 @@ function processFile_2samp(input, parent, file, i) {
 	selectImage(LeftID);
 	AddPixelSize (size, depth);	
 	filename = File.getNameWithoutExtension(file);
-	saveAs("Tiff", Loutput+File.separator+filename+"_Left");
-	PseudoFlatField(LeftID, Lgaussian, LFFoutput, "_Left");
+	saveAs("Tiff", Loutput+File.separator+"_L_"+filename);
+	PseudoFlatField(LeftID, Lgaussian, LFFoutput, "_L_");
 	close();
 	selectImage(RightID);
-	saveAs("Tiff", Routput+File.separator+filename+"_Right");
-	PseudoFlatField(RightID, Rgaussian, RFFoutput, "_Right");
+	saveAs("Tiff", Routput+File.separator+"_R_"+filename);
+	PseudoFlatField(RightID, Rgaussian, RFFoutput, "_R_");
 	close();
 }
 
@@ -255,7 +257,7 @@ function PseudoFlatField(active, gaussian, output, side) {
     run("Subtract...", "value="+mean+"");
     run("Gaussian Blur...", "sigma="+gaussian+"");
     imageCalculator("Subtract create 32-bit", active, blur);
-    saveAs("Tiff", output+File.separator+filename+side);
+    saveAs("Tiff", output+File.separator+"FF"+side+filename);
     close();
     selectImage(blur);
     close();

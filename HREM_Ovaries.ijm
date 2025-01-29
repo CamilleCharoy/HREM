@@ -66,7 +66,7 @@ images = input + File.separator + "Channel 1";
 			File.makeDirectory(output);
 			File.makeDirectory(FFoutput20);
 			File.makeDirectory(output20);		
-		//setBatchMode("hide");
+		setBatchMode("hide");
 		processFolder_1samp(images);
 	} if (Nsample == 2){
 		// LEFT sample
@@ -106,7 +106,7 @@ images = input + File.separator + "Channel 1";
 			File.makeDirectory(Routput);
 			File.makeDirectory(RFFoutput20);
 			File.makeDirectory(Routput20);	
-		//setBatchMode("hide");
+		setBatchMode("hide");
 		processFolder_2samp(images);
 	}		
 close("ROI Manager");
@@ -138,23 +138,24 @@ function AddPixelSize (size, depth){
 }
 function AreaCal(index, input, SID, area, type){
 // Calculate area of the sample ROI, used to calculate the radius of the gaussian filter  
-roiManager("Add");
-roiManager("select", index);
-roiManager("Save", input+File.separator+ SID + type +"CropArea.roi");
-roiManager("measure");
-area = getResult("Width");
-close("Results");
+	roiManager("Add");
+	roiManager("select", index);
+	roiManager("Save", input+File.separator+ SID + type +"CropArea.roi");
+	roiManager("measure");
+	area = getResult("Width");
+	close("Results");
 }
 function PseudoFlatField(active, radius, output) {
-// Removes background and does a pseudo flat field correction
+// Removes background and does a pseudo flat field correction, (Gaussian of radius a twentieth the size of the image and dividing 
+//the original image by it) creating a 32bit image
     run("Duplicate...", "gaussian");
     blur = getImageID();
     run("Measure");
     mean = getResult("Mean", 0);
     run("Subtract...", "value="+mean+"");
     run("Gaussian Blur...", "sigma="+radius+"");
-    imageCalculator("Subtract create 32-bit", active, blur);
-    saveAs("Tiff", output+File.separator+file);
+    imageCalculator("Divide create 32-bit", active, blur);
+    saveAs("Tiff", output+File.separator+"FF"+file);
     selectImage(blur);
     close();
     run("Clear Results");
@@ -205,7 +206,7 @@ function processFile_1samp(input, file, i) {
 	selectImage(active);
 	PseudoFlatField(active, Gaussian, FFoutput);
 	selectImage(active);
-	close("active");
+	close();
 	if (a==true || b==true){
 		Downscale(FFoutput20, file);
 		} 
