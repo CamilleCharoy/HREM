@@ -5,7 +5,7 @@
 // - crop sample (compatible with 1 or 2 samples per image)                           //
 // - apply pseudo flat field correction to increase contrast and image homogeneity    //
 // - create 10% resolution stack to quickly browse sample                             // 
-// written by Camille CHAROY, in CALM (last update 24/12/06)                          //
+// written by Camille CHAROY, in CALM (last update 25/01/24)                          //
 ////////////////////////////////////////////////////////////////////////////////////////
 
 
