@@ -5,7 +5,7 @@
 // - crop sample (compatible with 1 or 2 samples per image)                           //
 // - apply pseudo flat field correction to increase contrast and image homogeneity    //
 // - create 10% resolution stack to quickly browse sample                             // 
-// written by Camille CHAROY, in CALM (last update 25/01/24)                          //
+// written by Camille CHAROY, in CALM (last update 10/03/24)                          //
 ////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -13,7 +13,7 @@
 #@ File (label = "Select graticule", style = "file") graticule
 #@ Integer (label = "Number of samples in block", style = "slider", min=1, max=2) Nsamples
 #@ Float (label = "cut thickness (in um)", style="format:#.##") depth
-suffix = ".tif"
+suffix = ".tif*" 
 
 parent = File.getParent(input);
 name = File.getNameWithoutExtension(parent);
