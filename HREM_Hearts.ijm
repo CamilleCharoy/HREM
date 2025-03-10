@@ -13,8 +13,9 @@
 #@ File (label = "Select graticule", style = "file") graticule
 #@ Integer (label = "Number of samples in block", style = "slider", min=1, max=2) Nsamples
 #@ Float (label = "cut thickness (in um)", style="format:#.##") depth
-suffix = ".tif*" 
 
+suffix1 = ".tif";
+suffix2 = ".tiff";
 parent = File.getParent(input);
 name = File.getNameWithoutExtension(parent);
 parts = split(name, "_");
@@ -22,6 +23,12 @@ SID  = parts[0];
 
 // Get pixel size from graticule
 	open(graticule);
+	GratFormat = File.getName(graticule);
+	if (endsWith(GratFormat, suffix1)) {
+		suffix = suffix1;
+	} else {
+		suffix = suffix2;
+	}
 	Stack.getDimensions(width, height, channels, slices, frames);
 	chanelNumber = channels;
 	RemovePixelSize();
@@ -157,6 +164,7 @@ function processFile_1samp(input, parent, file, i) {
 	showProgress(i, list.length);
 	if (chanelNumber == 4) {
 		open(input+File.separator+file);
+		//run("Bio-Formats Importer", "open="+input+" color_mode=Default rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
 		start = getImageID();
 		run("Invert");
 		run("Grays");
@@ -168,6 +176,7 @@ function processFile_1samp(input, parent, file, i) {
 		close();
 	} else {
 		open(input+File.separator+file);
+		//run("Bio-Formats Importer", "open="+input+" color_mode=Default rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
 		run("Invert");
 		roiManager("Select", 0);
 		active = getImageID();
@@ -195,6 +204,7 @@ function processFile_2samp(input, parent, file, i) {
 	showProgress(i, list.length);
 	if (chanelNumber == 4) {
 		open(input+File.separator+file);
+		//run("Bio-Formats Importer", "open="+input+" color_mode=Default rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
 		start = getImageID();
 		run("Invert");
 		run("Grays");
@@ -211,6 +221,7 @@ function processFile_2samp(input, parent, file, i) {
 		close();
 	} else {
 		open(input+File.separator+file);
+		//run("Bio-Formats Importer", "open="+input+" color_mode=Default rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
 		run("Invert");
 		start = getImageID();
 		roiManager("Select", 0);
