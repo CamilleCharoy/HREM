@@ -5,7 +5,7 @@
 // - crop sample (compatible with 1 or 2 samples per image)                           //
 // - apply pseudo flat field correction to increase contrast and image homogeneity    //
 // - create 10% resolution stack to quickly browse sample                             // 
-// written by Camille CHAROY, in CALM (last update 10/03/24)                          //
+// written by Camille CHAROY, in CALM (last update 16/05/25)                          //
 ////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -13,6 +13,14 @@
 #@ File (label = "Select graticule", style = "file") graticule
 #@ Integer (label = "Number of samples in block", style = "slider", min=1, max=2) Nsamples
 #@ Float (label = "cut thickness (in um)", style="format:#.##") depth
+#@ String(value="__________________________________________________________________", visibility="MESSAGE") hint1
+#@ String(value="Script for processing of Heart sample imaged with HREM (Tybulewicz lab) \n Extract ", visibility="MESSAGE") hint2
+#@ String(value=". Exctract pixel size from graticule image", visibility="MESSAGE") hint3
+#@ String(value=". Crop around sample (compatible with 1 or 2 samples)", visibility="MESSAGE") hint4
+#@ String(value=". Apply pseudo flat field correction to increase contrast and image homogeneity", visibility="MESSAGE") hint5
+#@ String(value=". Create 10% resolution stack for fast data browsing", visibility="MESSAGE") hint6
+#@ String(value=". Rescale image is resolution above 4k", visibility="MESSAGE") hint6
+#@ String(value="Camille Charoy - Crick Advanced Light Microscopy, updated 16/05/2025", visibility="MESSAGE") hint6
 
 suffix1 = ".tif";
 suffix2 = ".tiff";
